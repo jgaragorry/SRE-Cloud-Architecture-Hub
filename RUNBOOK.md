@@ -1,290 +1,205 @@
-# 📖 RUNBOOK: Immutable Infrastructure Deployment
+# 🚀 OPERATIONAL RUNBOOK: Immutable Infrastructure Deployment
 
-> **Operational Guide for Zero-Downtime, Reproducible Infrastructure Deployment**
-
-[![Version](https://img.shields.io/badge/Version-2.0-blue?style=flat-square)](https://semver.org)
-[![IaC](https://img.shields.io/badge/Immutable-Infrastructure-orange?style=flat-square)](https://www.terraform.io)
-[![Vagrant](https://img.shields.io/badge/Vagrant-2.4.0+-1563FF?style=flat-square)](https://www.vagrantup.com)
-[![Ansible](https://img.shields.io/badge/Ansible-9.0+-EE0000?style=flat-square)](https://www.ansible.com)
-[![Docker](https://img.shields.io/badge/Docker-24.0+-2496ED?style=flat-square)](https://www.docker.com)
-[![WSL 2](https://img.shields.io/badge/WSL-2.0+-4D4D4D?style=flat-square)](https://learn.microsoft.com/en-us/windows/wsl/)
+> **Production-Grade SOP for Zero-Friction Infrastructure as Code**  
+> Complete deployment, validation, and recovery procedures for Vagrant + Ansible + Docker
 
 ---
 
-## 📋 Table of Contents
+## ⚡ TL;DR — 30 Second Start
 
-1. [Overview](#overview)
-2. [Prerequisites](#prerequisites)
-3. [Phase 1: Clean State](#phase-1-clean-state)
-4. [Phase 2: Environment Setup](#phase-2-environment-setup)
-5. [Phase 3: Infrastructure Deployment](#phase-3-infrastructure-deployment)
-6. [Phase 4: Configuration Management](#phase-4-configuration-management)
-7. [Phase 5: Validation & Testing](#phase-5-validation--testing)
-8. [Troubleshooting](#troubleshooting)
-9. [Recovery Procedures](#recovery-procedures)
+```bash
+# 1. Setup WSL-Docker bridge
+export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
+export PATH="$PATH:/mnt/c/Windows/System32"
 
----
+# 2. Deploy infrastructure
+vagrant up --provider=docker
 
-## 📚 Overview
+# 3. Configure with Ansible
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
+  -i "127.0.0.1:2200," playbook.yml -u root \
+  -e "ansible_password=root" \
+  --ssh-extra-args="-o StrictHostKeyChecking=no"
 
-This runbook provides **step-by-step operational procedures** for deploying an immutable infrastructure stack:
-
-- **Host:** Windows 11 + WSL 2 (control plane)
-- **Orchestrator:** Vagrant with Docker provider
-- **Provisioner:** Ansible (configuration management)
-- **Runtime:** Docker (containerization)
-- **Workload:** Nginx on Alpine Linux
-
-### What "Immutable" Means Here
-
-Every deployment:
-- ✅ Starts from a clean slate
-- ✅ Follows the same playbook exactly
-- ✅ Can be destroyed and rebuilt at will
-- ✅ Requires zero manual configuration
-- ✅ Is fully traceable in version control
-
----
-
-## 🏛️ System Architecture
-
-```
-Windows 11 (Host)
-    ↓
-    └─── WSL 2 (Linux Subsystem)
-            ├─ Terminal / Vagrant CLI
-            ├─ Ansible Control Node (SSH)
-            └─ Docker Client (via Windows bridge)
-                    ↓
-                    └─── Docker Desktop (Windows)
-                            ↓
-                            └─── Docker Container (Ubuntu 22.04)
-                                    ├─ SSH Server (Port 2200)
-                                    ├─ Docker Engine (DinD)
-                                    └─ Application Stack
-                                        └─ Nginx:Alpine
+# Done! 🎉
 ```
 
-**Data Flow:**
-1. WSL terminal executes `vagrant up`
-2. Vagrant communicates with Docker Desktop via Windows bridge
-3. Docker Desktop creates Ubuntu container
-4. Ansible connects via SSH (Port 2200)
-5. Configuration applied → Infrastructure ready
+---
+
+## 📋 Quick Navigation
+
+| Section | Purpose |
+|---------|---------|
+| [Prerequisites](#-prerequisites) | Verify your system is ready |
+| [Deployment Pipeline](#-deployment-pipeline) | 5-phase workflow |
+| [Troubleshooting](#-quick-troubleshooting) | Common issues & fixes |
+| [Recovery](#-disaster-recovery) | When things break |
+| [Checklists](#-operational-checklists) | Step-by-step verification |
+
+---
+
+## 🏛️ System Architecture & Data Flow
+
+```mermaid
+graph TB
+    subgraph Host["🪟 Windows 11 Host"]
+        direction TB
+        DD["🐳 Docker Desktop<br/>Engine & Runtime"]
+    end
+
+    subgraph WSL["🐧 WSL 2 Control Plane"]
+        direction TB
+        CLI["💻 Terminal<br/>Vagrant CLI"]
+        ANS["🎯 Ansible<br/>Control Node"]
+    end
+
+    subgraph Container["☁️ Ubuntu Container"]
+        direction TB
+        SSH["🔐 SSH Server<br/>Port 2200"]
+        DinD["🐳 Docker<br/>DinD"]
+        APP["📦 Workload<br/>Nginx:Alpine"]
+    end
+
+    CLI -->|"vagrant up"| DD
+    DD -->|"Creates Container"| SSH
+    ANS -->|"SSH on 2200"| SSH
+    SSH -->|"Provisions"| DinD
+    DinD -->|"Deploys"| APP
+
+    style Host fill:#0078D4,stroke:#005A9E,stroke-width:3px,color:#fff
+    style WSL fill:#2ECC71,stroke:#27AE60,stroke-width:3px,color:#fff
+    style Container fill:#F39C12,stroke:#D68910,stroke-width:3px,color:#fff
+    style CLI fill:#34495E,stroke:#2C3E50,stroke-width:2px,color:#fff
+    style ANS fill:#34495E,stroke:#2C3E50,stroke-width:2px,color:#fff
+    style DD fill:#34495E,stroke:#2C3E50,stroke-width:2px,color:#fff
+    style SSH fill:#8E44AD,stroke:#6C3483,stroke-width:2px,color:#fff
+    style DinD fill:#8E44AD,stroke:#6C3483,stroke-width:2px,color:#fff
+    style APP fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+```
 
 ---
 
 ## ✅ Prerequisites
 
-Before starting, verify your system is ready:
-
-| Component | Minimum Version | Check Command |
-|-----------|-----------------|----------------|
-| **Windows** | 10 (22H2) or 11 | `winver` |
-| **WSL 2** | 2.0.0+ | `wsl --version` |
-| **Docker Desktop** | 24.0+ | `docker --version` |
-| **Vagrant** | 2.4.0+ | `vagrant --version` |
-| **Ansible** | 9.0+ | `ansible --version` |
-| **SSH Client** | Any | `ssh -V` |
-| **Git** | Any | `git --version` |
-
-### Installation Checklist
+**Verify before starting:**
 
 ```bash
-# Verify all tools are installed and working
-wsl --version          # Should show 2.x.x
-docker --version       # Should show 24.0+
-vagrant --version      # Should show 2.4.0+
-ansible --version      # Should show 9.0+
-
-# Test Docker connectivity
-docker ps              # Should show empty container list
-
-# Test SSH
-ssh localhost -V       # Should show OpenSSH version
+# Quick sanity check
+wsl --version              # ✅ 2.0.0+
+docker --version           # ✅ 24.0+
+vagrant --version          # ✅ 2.4.0+
+ansible --version          # ✅ 9.0+
+docker ps                  # ✅ Should work
 ```
 
-**If any tool is missing:** Install from official sources
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Vagrant](https://www.vagrantup.com/downloads)
-- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/index.html)
+| Component | Min Version | Missing? |
+|-----------|-------------|----------|
+| **Windows** | 10 22H2 or 11 | [Get Windows](https://www.microsoft.com/en-us/windows) |
+| **WSL 2** | 2.0.0+ | `wsl --install` |
+| **Docker Desktop** | 24.0+ | [Download](https://www.docker.com/products/docker-desktop/) |
+| **Vagrant** | 2.4.0+ | [Download](https://www.vagrantup.com/downloads) |
+| **Ansible** | 9.0+ | `pip install ansible` |
 
 ---
 
-## 🧹 Phase 1: Clean State
+## 🚀 DEPLOYMENT PIPELINE
 
-⚠️ **WARNING:** This step removes ALL Docker containers and images. Only run if you want a completely clean system.
+### Phase 1️⃣: System Reset (Optional but Recommended)
 
-### Option A: Full Nuclear Reset
+> **Goal:** Achieve clean slate state for reproducible deployment
 
 ```bash
+# ⚠️  WARNING: This removes ALL Docker containers & images
+
 #!/bin/bash
 set -e
+echo "🧹 Full system reset in progress..."
 
-echo "🧹 Starting complete system cleanup..."
-
-# Step 1: Remove all running containers
-echo "   • Removing Docker containers..."
+# Remove containers & images
 docker rm -f $(docker ps -aq) 2>/dev/null || true
-
-# Step 2: Remove all images
-echo "   • Removing Docker images..."
 docker rmi $(docker images -q) -f 2>/dev/null || true
+docker system prune -a -f 2>/dev/null || true
 
-# Step 3: Clean Vagrant state
-echo "   • Cleaning Vagrant state..."
+# Clean Vagrant
 vagrant destroy -f 2>/dev/null || true
 rm -rf .vagrant/
 
-# Step 4: Remove SSH key fingerprints
-echo "   • Clearing SSH known_hosts..."
-ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "[127.0.0.1]:2200" 2>/dev/null || true
+# Remove SSH fingerprints
+ssh-keygen -f ~/.ssh/known_hosts -R "[127.0.0.1]:2200" 2>/dev/null || true
 
-# Step 5: Prune Docker system
-echo "   • Running Docker system prune..."
-docker system prune -a -f 2>/dev/null || true
-
-echo "✅ Clean state achieved! System ready for fresh deployment."
+echo "✅ Clean slate ready!"
 ```
 
-### Option B: Minimal Reset (Vagrant only)
-
-```bash
-# Destroy just Vagrant resources, keep Docker images
-vagrant destroy -f
-rm -rf .vagrant/
-```
-
-### Option C: Smart Reset (Keep images, clean containers)
-
-```bash
-# Useful for repeated testing without re-downloading
-docker rm -f $(docker ps -aq) 2>/dev/null || true
-vagrant destroy -f
-rm -rf .vagrant/
-```
+**Skip this if:** You want to keep existing Docker images (faster).
 
 ---
 
-## 🔧 Phase 2: Environment Setup
+### Phase 2️⃣: WSL Configuration
 
-### Step 1: WSL Configuration
+> **Goal:** Enable WSL ↔ Docker Desktop communication
 
-WSL must communicate with Docker Desktop running on Windows. Set these environment variables:
-
+**Option A: One-Time Setup**
 ```bash
-# Enable WSL access to Windows Docker
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
-
-# Add Windows System32 to PATH (for Windows binaries)
 export PATH="$PATH:/mnt/c/Windows/System32"
-
-# Optional: Add Windows PowerShell
-export PATH="$PATH:/mnt/c/Windows/System32/WindowsPowerShell/v1.0"
+docker ps  # Verify
 ```
 
-**To make these persistent, add to `~/.bashrc`:**
-
+**Option B: Permanent Setup** (Recommended)
 ```bash
 cat >> ~/.bashrc <<'EOF'
 
-# ========== Docker & Vagrant WSL Configuration ==========
+# ===== Infrastructure Configuration =====
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
 export PATH="$PATH:/mnt/c/Windows/System32"
 export ANSIBLE_HOST_KEY_CHECKING=False
-
-# ========== End Configuration ==========
+# ========================================
 EOF
 
 source ~/.bashrc
 ```
 
-### Step 2: Verify Docker Connectivity
-
+**Verify:**
 ```bash
-# Test Docker socket communication
-docker ps
-
-# Expected output: Empty container list (or existing containers)
-# If error: Docker Desktop not running on Windows
-```
-
-### Step 3: Clone Repository
-
-```bash
-# Clone the infrastructure repository
-git clone https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible.git
-
-# Navigate to project
-cd iac-immutable-deployment-vagrant-ansible
-
-# Verify structure
-ls -la
-# Expected files: Vagrantfile, playbook.yml, RUNBOOK.md, Makefile, scripts/
-```
-
-### Step 4: Verify File Permissions
-
-```bash
-# Make scripts executable
-chmod +x scripts/*.sh
-
-# Verify playbook YAML syntax
-ansible-playbook playbook.yml --syntax-check
+docker ps  # Should connect to Docker Desktop
 ```
 
 ---
 
-## 🚀 Phase 3: Infrastructure Deployment
+### Phase 3️⃣: Deploy Infrastructure
 
-### Launch Vagrant
+> **Goal:** Spin up Ubuntu container with SSH access
 
 ```bash
-# Start container infrastructure with Docker provider
+# Clone repository
+git clone https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible.git
+cd iac-immutable-deployment-vagrant-ansible
+
+# Launch container
 vagrant up --provider=docker
 ```
 
-**What happens:**
-- Vagrant reads `Vagrantfile`
-- Creates Ubuntu 22.04 Docker container
-- Configures SSH server on port 2200
-- Outputs container ID and connection info
-- **Takes 30-60 seconds**
+**What happens** (40-60 seconds):
+- ✅ Vagrant creates Ubuntu 22.04 container
+- ✅ SSH server installed on port 2200
+- ✅ Network bridges configured
+- ✅ Container marked as "running"
 
-### Verify Container Status
-
+**Verify:**
 ```bash
-# Check Vagrant status
-vagrant status
-
-# Expected output:
-# current machine states:
-# default                   running (docker)
-
-# List running Docker container
-docker ps
-
-# Should show one container based on the Vagrantfile
-```
-
-### Quick Connectivity Test
-
-```bash
-# Test SSH connection
-ssh -p 2200 root@127.0.0.1 -o StrictHostKeyChecking=no
-
-# Inside container, verify basic tools
-cat /etc/os-release
-exit
+vagrant status                     # Should show "running"
+vagrant ssh                        # Should connect without password
+docker ps                          # Should show 1 container
 ```
 
 ---
 
-## ⚙️ Phase 4: Configuration Management (Ansible)
+### Phase 4️⃣: Configure with Ansible
 
-### The "Golden Command" — Apply Configuration
+> **Goal:** Apply configuration, install services, deploy workloads
 
 ```bash
+# THE "GOLDEN COMMAND"
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
   -i "127.0.0.1:2200," \
   playbook.yml \
@@ -293,338 +208,152 @@ ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
   --ssh-extra-args="-o StrictHostKeyChecking=no"
 ```
 
-**Breaking this down:**
-| Flag | Purpose |
-|------|---------|
-| `ANSIBLE_HOST_KEY_CHECKING=False` | Don't prompt about SSH key verification (safe for local dev) |
-| `-i "127.0.0.1:2200,"` | Inventory: single host at that IP:port (comma required!) |
-| `playbook.yml` | Configuration file to apply |
-| `-u root` | Connect as root user |
-| `-e "ansible_password=root"` | Use password authentication (not SSH keys) |
-| `--ssh-extra-args="-o StrictHostKeyChecking=no"` | Additional SSH safety flags |
+**Expected execution** (60-120 seconds):
+- ✅ System packages updated
+- ✅ Docker daemon installed & started
+- ✅ Application containers deployed
+- ✅ Health checks passed
+- ✅ Output: `changed=X ok=Y failed=0`
 
-### Expected Playbook Tasks
-
-Your `playbook.yml` should include:
-
-```yaml
----
-- name: Configure immutable infrastructure
-  hosts: all
-  become: yes
-  gather_facts: yes
-  
-  tasks:
-    # ===== System Updates =====
-    - name: Update system packages
-      apt:
-        update_cache: yes
-        upgrade: dist
-      tags: [system]
-    
-    # ===== Install Docker =====
-    - name: Install Docker
-      apt:
-        name:
-          - docker.io
-          - docker-compose
-          - curl
-          - git
-        state: present
-      tags: [docker]
-    
-    # ===== Start Docker Service =====
-    - name: Start Docker daemon
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
-      tags: [docker]
-    
-    # ===== Deploy Application Container =====
-    - name: Deploy Nginx container
-      docker_container:
-        name: web_app
-        image: nginx:alpine
-        state: started
-        restart_policy: always
-        ports:
-          - "80:80"
-        volumes:
-          - /data/nginx:/usr/share/nginx/html
-      tags: [app]
-    
-    # ===== Validation =====
-    - name: Wait for Nginx to be ready
-      uri:
-        url: http://localhost:80
-        status_code: 200
-      register: result
-      until: result.status == 200
-      retries: 3
-      delay: 5
-      tags: [validate]
-```
-
-### Monitor Ansible Execution
-
+**Run a second time** (idempotency check):
 ```bash
-# Add verbosity for debugging
-ansible-playbook ... -v      # Show task results
-ansible-playbook ... -vv     # Show module details
-ansible-playbook ... -vvv    # Show all details (very verbose)
-```
-
-### Idempotence Verification
-
-Run the playbook a second time. If designed correctly:
-- All tasks should show **ok** or **skipped** (not **changed**)
-- No errors should occur
-- All services remain operational
-
-```bash
-# Run again - should be idempotent
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
-  -i "127.0.0.1:2200," \
-  playbook.yml \
-  -u root \
-  -e "ansible_password=root"
-
-# Compare output: should see "changed=0" at the end
+# Should see "changed=0" at the end
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root \
+  -e "ansible_password=root" --ssh-extra-args="-o StrictHostKeyChecking=no"
 ```
 
 ---
 
-## ✅ Phase 5: Validation & Testing
+### Phase 5️⃣: Validation
 
-### 5.1 SSH Connectivity
-
-```bash
-# Connect to container
-vagrant ssh
-
-# Inside container, verify:
-whoami                          # Should show: root
-hostname                        # Should show container ID
-docker --version                # Docker installed?
-docker ps                       # Any containers running?
-
-# Exit container
-exit
-```
-
-### 5.2 Docker Verification
+> **Goal:** Confirm everything works end-to-end
 
 ```bash
-# From WSL, check Docker inside container
-vagrant ssh -c "docker ps"
+# 1. SSH connectivity
+vagrant ssh -c "whoami"            # Should show: root
 
-# Expected: Running containers (Nginx, etc.)
-vagrant ssh -c "docker images"
+# 2. Docker check
+vagrant ssh -c "docker ps"         # Should show running containers
 
-# Expected: Images pulled for deployment
+# 3. Application health
+curl -I http://localhost:80        # Should return HTTP 200
+
+# 4. Run smoke tests
+bash scripts/smoke-test.sh         # Should pass all checks
+
+# 5. Full system health
+vagrant ssh -c "systemctl status docker"  # Should show: active (running)
 ```
 
-### 5.3 Application Smoke Test
-
-```bash
-# Run included smoke tests
-bash scripts/smoke-test.sh
-
-# Or manual HTTP test
-curl -I http://localhost:80 \
-  -H "Host: 127.0.0.1"
-
-# Expected: HTTP 200 OK
-```
-
-### 5.4 Port Accessibility
-
-```bash
-# From WSL, check if Nginx is accessible
-curl -s http://127.0.0.1:80 | head -20
-
-# From Windows (if port forwarded), test in browser
-# http://localhost:8080 (or whatever is mapped in Vagrantfile)
-```
-
-### 5.5 Service Health
-
-```bash
-# SSH into container and check service status
-vagrant ssh -c "systemctl status docker"
-vagrant ssh -c "systemctl is-active docker"
-
-# Check Nginx logs
-vagrant ssh -c "docker logs web_app | tail -20"
-```
-
-### 5.6 Persistence Verification
-
-```bash
-# Restart container to verify services auto-start
-vagrant reload
-
-# After restart, verify services are running
-vagrant ssh -c "docker ps"
-```
+✅ **All green?** Deployment complete!
 
 ---
 
-## 🔍 Troubleshooting
+## 🔍 QUICK TROUBLESHOOTING
 
-### Problem: Docker Not Found in WSL
+### ❌ `docker: command not found`
 
-**Symptoms:** `docker: command not found`
-
-**Solutions:**
 ```bash
-# 1. Check Docker Desktop is running on Windows
-#    → Open Windows Start Menu → Search "Docker Desktop" → Click it
+# Fix 1: Start Docker Desktop on Windows
+#   → Windows Start Menu → Search "Docker" → Launch
 
-# 2. Verify PATH includes Windows binaries
-echo $PATH | grep -i system32
-# If not found, run:
+# Fix 2: Add Docker to PATH
 export PATH="$PATH:/mnt/c/Windows/System32"
-
-# 3. Test Docker socket
 docker ps
 ```
 
-### Problem: Vagrant Can't Connect to Docker
+### ❌ `Unable to connect to Docker daemon`
 
-**Symptoms:** `Error: Unable to connect to Docker daemon`
-
-**Solutions:**
 ```bash
-# 1. Enable WSL interoperability
+# Enable WSL interoperability
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
-
-# 2. Add to ~/.bashrc to persist:
-echo 'export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"' >> ~/.bashrc
-
-# 3. Restart terminal and try again
 vagrant up --provider=docker
 ```
 
-### Problem: SSH Connection Refused
+### ❌ `SSH: Connection refused [127.0.0.1:2200]`
 
-**Symptoms:** `ssh: connect to host 127.0.0.1 port 2200: Connection refused`
-
-**Solutions:**
 ```bash
-# 1. Verify container is running
+# Check container status
 vagrant status
 
-# 2. If not running, start it
+# If not running:
 vagrant up --provider=docker
 
-# 3. Check SSH server status inside container
-vagrant ssh -c "systemctl status ssh"
-
-# 4. Clear stale SSH keys
+# Clear stale SSH keys
 ssh-keygen -f ~/.ssh/known_hosts -R "[127.0.0.1]:2200"
 
-# 5. Try SSH manually with verbose output
+# Manual SSH test
 ssh -vvv -p 2200 root@127.0.0.1
 ```
 
-### Problem: Ansible Timeout
+### ❌ `Ansible UNREACHABLE`
 
-**Symptoms:** `fatal: [127.0.0.1:2200]: UNREACHABLE! => {`
-
-**Solutions:**
 ```bash
-# 1. Wait longer for SSH to be ready
+# Wait for SSH to stabilize
 sleep 10
-vagrant ssh
 
-# 2. Increase Ansible timeout
-ansible-playbook -i "127.0.0.1:2200," playbook.yml \
-  -e "ansible_connection_timeout=30" ...
-
-# 3. Test SSH manually first
+# Test SSH manually first
 ssh -p 2200 root@127.0.0.1
+
+# Then retry Ansible
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root"
 ```
 
-### Problem: Playbook Fails with "Module Not Found"
+### ❌ `Module docker_container not found`
 
-**Symptoms:** `fatal: [127.0.0.1]: FAILED! => {"msg": "The following modules failed to load...`
-
-**Solutions:**
 ```bash
-# 1. Install required Ansible collections
+# Install community collections
 ansible-galaxy collection install community.docker
 
-# 2. Verify playbook syntax
-ansible-playbook playbook.yml --syntax-check
-
-# 3. Check Ansible version
+# Verify Ansible version
 ansible --version  # Should be 9.0+
 ```
 
-### Problem: Docker Can't Download Images
+### ❌ `Docker image pull timeout`
 
-**Symptoms:** `Error: Unable to pull image from registry`
-
-**Solutions:**
 ```bash
-# 1. Check internet connectivity inside container
+# Test internet from container
 vagrant ssh -c "curl https://www.google.com"
 
-# 2. Try pulling image manually
+# Manual image pull
 vagrant ssh -c "docker pull nginx:alpine"
 
-# 3. If behind proxy, configure Docker daemon.json
-vagrant ssh -c "sudo vi /etc/docker/daemon.json"
-# Add proxy config, restart Docker
-```
-
-### Problem: Vagrant Ignores Ansible Provisioner
-
-**Symptoms:** `vagrant up` completes but Ansible playbook never runs
-
-**Solutions:**
-```bash
-# 1. Run provisioning manually
-vagrant provision
-
-# 2. Check Vagrantfile has provisioner block:
-cat Vagrantfile | grep -A 5 "provisioner"
-
-# 3. Run with verbose output
-vagrant up --provider=docker -v
+# If behind proxy, edit Docker config
+vagrant ssh
+sudo vi /etc/docker/daemon.json
+# Add proxy settings, restart Docker
 ```
 
 ---
 
-## 🆘 Recovery Procedures
+## 🆘 DISASTER RECOVERY
 
-### Complete System Restore
+### Complete System Reset
 
-If anything goes wrong, start fresh:
+> Use when nothing works and you need a clean start
 
 ```bash
 #!/bin/bash
-echo "Starting complete recovery..."
 
-# 1. Stop and remove Vagrant resources
+echo "🔄 Complete system recovery..."
+
+# 1. Nuclear option
 vagrant destroy -f 2>/dev/null || true
 rm -rf .vagrant 2>/dev/null || true
-
-# 2. Clean Docker
 docker rm -f $(docker ps -aq) 2>/dev/null || true
+docker rmi $(docker images -q) -f 2>/dev/null || true
 docker system prune -a -f 2>/dev/null || true
 
-# 3. Clear SSH fingerprints
+# 2. Clear SSH
 ssh-keygen -f ~/.ssh/known_hosts -R "[127.0.0.1]:2200" 2>/dev/null || true
 
-# 4. Restart Docker Desktop (from Windows)
-# Close Docker, wait 10 seconds, reopen
+# 3. Restart Docker (Windows)
+# Close Docker Desktop, wait 10 seconds, reopen
 
-# 5. Re-deploy
+# 4. Redeploy
 sleep 10
 vagrant up --provider=docker
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root"
 
 echo "✅ Recovery complete!"
 ```
@@ -632,147 +361,243 @@ echo "✅ Recovery complete!"
 ### Partial Recovery (Keep Images)
 
 ```bash
-# Useful for debugging without re-pulling everything
+# Faster if you don't want to re-download images
 vagrant destroy -f
 rm -rf .vagrant/
 vagrant up --provider=docker
+# Re-run Ansible
 ```
 
-### Network Reset
+### Network Troubleshooting
 
 ```bash
-# If Docker networking is broken
+# Docker networking broken?
 docker network prune -f
 vagrant destroy -f
 docker system prune -a -f
-# Restart Docker Desktop
+# Restart Docker Desktop from Windows
 vagrant up --provider=docker
 ```
 
 ---
 
-## 📊 Health Check Dashboard
+## 📊 OPERATIONAL CHECKLISTS
 
-Run this script regularly to verify system health:
+### ✓ Pre-Deployment Checklist
+
+- [ ] Windows Version: 10/11 (22H2+)
+- [ ] WSL 2 installed and running (`wsl --version`)
+- [ ] Docker Desktop running (check system tray)
+- [ ] Vagrant installed (`vagrant --version`)
+- [ ] Ansible installed (`ansible --version`)
+- [ ] SSH client available (`ssh -V`)
+- [ ] Repository cloned
+- [ ] Network connectivity to Docker Hub confirmed
+
+### ✓ Post-Deployment Checklist
+
+- [ ] `vagrant status` → "running"
+- [ ] `docker ps` → shows 1 container
+- [ ] `vagrant ssh` → connects without prompt
+- [ ] Ansible playbook completed with `failed=0`
+- [ ] `curl http://localhost:80` → HTTP 200
+- [ ] `vagrant ssh -c "docker ps"` → shows services
+- [ ] `bash scripts/smoke-test.sh` → all passed
+
+### ✓ Recovery Verification
+
+- [ ] `.vagrant/` directory cleaned
+- [ ] All Docker resources removed
+- [ ] SSH known_hosts cleared
+- [ ] Docker Desktop restarted
+- [ ] Fresh deployment successful
+- [ ] All services responding
+- [ ] No errors in logs
+
+---
+
+## 🆙 IDEMPOTENCE VERIFICATION
+
+Run this to ensure your Ansible playbook is truly idempotent:
 
 ```bash
 #!/bin/bash
 
-echo "=== INFRASTRUCTURE HEALTH CHECK ==="
-echo ""
+echo "Testing idempotence..."
 
-echo "✓ Docker Status:"
-docker ps -q | wc -l
-echo "  Containers running"
+# Run 1
+RESULT1=$(ansible-playbook -i "127.0.0.1:2200," playbook.yml \
+  -u root -e "ansible_password=root" 2>&1 | grep "changed=")
 
-echo ""
-echo "✓ Vagrant Status:"
-vagrant status
+echo "Run 1: $RESULT1"
 
-echo ""
-echo "✓ SSH Connectivity:"
-if ssh -p 2200 root@127.0.0.1 -o ConnectTimeout=3 -o StrictHostKeyChecking=no "exit" 2>/dev/null; then
-  echo "  ✅ SSH: Connected"
+# Run 2 (should show changed=0)
+RESULT2=$(ansible-playbook -i "127.0.0.1:2200," playbook.yml \
+  -u root -e "ansible_password=root" 2>&1 | grep "changed=")
+
+echo "Run 2: $RESULT2"
+
+# Verify
+if echo "$RESULT2" | grep -q "changed=0"; then
+  echo "✅ Playbook is idempotent!"
 else
-  echo "  ❌ SSH: Disconnected"
+  echo "⚠️  Non-idempotent tasks detected"
 fi
-
-echo ""
-echo "✓ Application Status:"
-curl -s -I http://localhost:80 | head -1
-
-echo ""
-echo "✓ Ansible Control:"
-ansible all -i "127.0.0.1:2200," -u root -e "ansible_password=root" \
-  --ssh-extra-args="-o StrictHostKeyChecking=no" -m ping
-
-echo ""
-echo "=== END HEALTH CHECK ==="
 ```
 
 ---
 
-## 📞 Getting Help
+## 📞 SUPPORT & DEBUGGING
 
-If you're stuck:
+### Enable Verbose Output
 
-1. **Check the logs:**
-   ```bash
-   vagrant ssh -c "journalctl -xe"    # System logs
-   vagrant ssh -c "docker logs web_app"  # App logs
-   ```
+```bash
+# Show task details
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root" -v
 
-2. **Enable debug mode:**
-   ```bash
-   vagrant up --provider=docker -v
-   ansible-playbook ... -vvv
-   ```
+# Show module details
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root" -vv
 
-3. **Test components individually:**
-   ```bash
-   docker ps              # Docker working?
-   vagrant status         # Vagrant aware?
-   ssh -p 2200 ...        # SSH accessible?
-   ```
+# Full debug output
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root" -vvv
+```
 
-4. **Contact support:**
-   - **LinkedIn:** [jgaragorry](https://www.linkedin.com/in/jgaragorry)
-   - **GitHub Issues:** [iac-immutable-deployment](https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible/issues)
-   - **WhatsApp:** [+56 956744034](https://wa.me/56956744034)
+### Check Logs
 
----
+```bash
+# System logs inside container
+vagrant ssh -c "journalctl -n 50 -xe"
 
-## 📋 Checklists
+# Docker daemon logs
+vagrant ssh -c "journalctl -u docker -n 50"
 
-### Pre-Deployment Checklist
+# Application logs
+vagrant ssh -c "docker logs web_app | tail -50"
+```
 
-- [ ] All prerequisites installed (`wsl --version`, `docker --version`, etc.)
-- [ ] Docker Desktop running on Windows
-- [ ] WSL environment variables set (`VAGRANT_WSL_ENABLE_WINDOWS_ACCESS`)
-- [ ] Repository cloned
-- [ ] Script permissions set (`chmod +x scripts/*.sh`)
-- [ ] Ansible syntax validated (`ansible-playbook playbook.yml --syntax-check`)
+### Manual Service Checks
 
-### Post-Deployment Checklist
+```bash
+# SSH into container
+vagrant ssh
 
-- [ ] `vagrant status` shows "running"
-- [ ] `docker ps` shows container
-- [ ] SSH connection works (`vagrant ssh` succeeds)
-- [ ] Ansible playbook completes without errors
-- [ ] Services running inside container (`docker ps` inside container)
-- [ ] Application accessible (`curl http://localhost:80`)
-- [ ] Smoke tests pass (`./scripts/smoke-test.sh`)
+# Inside container:
+systemctl status docker          # Docker service status
+docker ps                        # Running containers
+docker images                    # Downloaded images
+docker network ls                # Network configuration
+df -h                           # Disk space
+free -h                         # Memory usage
+curl http://localhost:80        # Test application
 
-### Disaster Recovery Checklist
+# Exit
+exit
+```
 
-- [ ] Backed up current `.vagrant/` state
-- [ ] Documented any manual changes to infrastructure
-- [ ] Ran cleanup scripts before full reset
-- [ ] Docker Desktop restarted after recovery
-- [ ] Re-deployed and verified all services
-- [ ] Checked logs for any errors
+### Contact
+
+- **GitHub Issues:** [iac-immutable-deployment](https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible/issues)
+- **LinkedIn:** [jgaragorry](https://www.linkedin.com/in/jgaragorry)
+- **WhatsApp:** [+56 956744034](https://wa.me/56956744034)
 
 ---
 
-## 📚 Additional Resources
+## 🧠 UNDERSTANDING THE ARCHITECTURE
 
-- [Vagrant Docker Provider Docs](https://www.vagrantup.com/docs/providers/docker)
-- [Ansible Playbook Best Practices](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_best_practices.html)
-- [Docker Documentation](https://docs.docker.com/)
-- [WSL 2 User Guide](https://learn.microsoft.com/en-us/windows/wsl/)
-- [SRE Best Practices](https://sre.google/books/)
+### Why This Design?
+
+```mermaid
+graph LR
+    A["Windows<br/>Host"] -->|WSL 2<br/>Bridge| B["Linux<br/>Subsystem"]
+    B -->|Docker<br/>Socket| C["Docker<br/>Desktop"]
+    C -->|Container<br/>Lifecycle| D["Ubuntu<br/>Container"]
+    D -->|SSH Port<br/>2200| E["Ansible<br/>Control"]
+    E -->|Idempotent<br/>Configuration| F["Services<br/>Running"]
+
+    style A fill:#0078D4,stroke:#005A9E,stroke-width:2px,color:#fff
+    style B fill:#2ECC71,stroke:#27AE60,stroke-width:2px,color:#fff
+    style C fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
+    style D fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style E fill:#8E44AD,stroke:#6C3483,stroke-width:2px,color:#fff
+    style F fill:#16A085,stroke:#138D75,stroke-width:2px,color:#fff
+```
+
+**Key Decisions:**
+
+| Decision | Why |
+|----------|-----|
+| **WSL 2 + Docker Desktop** | Native Windows integration, zero VM overhead |
+| **Vagrant Docker Provider** | Faster than VirtualBox, container-native |
+| **Ansible** | Idempotent config, zero manual steps, reproducible |
+| **Port 2200** | Avoids conflicts with host SSH services |
+| **Password Auth** | Simple for local dev (use SSH keys in production) |
+| **DinD** | Application isolation, production-like environment |
 
 ---
 
-## 📄 Document Versions
+## 🎯 WHAT "IMMUTABLE" MEANS
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 2.0 | April 2026 | Juan García Gorry | Complete rewrite with better structure, troubleshooting |
-| 1.0 | 2025 | Juan García Gorry | Initial version |
+✅ **Every deployment is identical**
+- Same commands → Same result
+- No "configuration drift"
+- Environment is reproducible from scratch
+
+✅ **Destruction is free**
+- No fear of losing manual configuration
+- Can redeploy at will
+- Perfect for testing & disaster recovery drills
+
+✅ **Version control is source of truth**
+- All infrastructure in Git
+- Peer review before deployment
+- Complete audit trail
+
+✅ **Idempotent operations**
+- Run 10 times, get same result
+- Safe to retry after failures
+- No side effects
 
 ---
 
-**Last Updated:** April 2026 | **Status:** Active ✅ | **Reviewed By:** SRE Team
+## 📖 REFERENCE MATERIAL
+
+| Topic | Link |
+|-------|------|
+| **Vagrant Docs** | https://www.vagrantup.com/docs |
+| **Ansible Best Practices** | https://docs.ansible.com/ansible/latest/playbook_guide/ |
+| **Docker DinD** | https://www.docker.com/blog/docker-in-docker/ |
+| **WSL 2 Guide** | https://learn.microsoft.com/en-us/windows/wsl/ |
+| **SRE Handbook** | https://sre.google/books/ |
+
+---
+
+## 📝 DOCUMENT METADATA
+
+| Field | Value |
+|-------|-------|
+| **Version** | 2.1 |
+| **Date** | April 2026 |
+| **Author** | Juan García Gorry |
+| **Status** | Production-Ready ✅ |
+| **Last Review** | 2026-04-02 |
+| **Audience** | DevOps / SRE Engineers |
+
+---
+
+<div style="text-align: center; padding: 20px; border-top: 3px solid #E74C3C; border-bottom: 3px solid #E74C3C; background: #f8f9fa; margin-top: 40px;">
+
+### 🚀 Ready to Deploy?
+
+**Quick Summary:** Clean state → Setup WSL → Deploy with Vagrant → Configure with Ansible → Validate
+
+**Estimated Time:** 5-10 minutes total
+
+**Questions?** Check [Troubleshooting](#-quick-troubleshooting) or [Contact](#contact)
+
+</div>
+
+---
+
+**This runbook is intentionally dense for quick reference and thorough for complete understanding.**
 
 
