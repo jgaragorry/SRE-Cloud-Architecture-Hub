@@ -26,34 +26,52 @@ Perfect for **DevOps engineers, SREs, and infrastructure architects** learning o
 
 ## 🏛️ Architecture at a Glance
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Windows 11 + WSL 2                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  WSL Terminal                                        │  │
-│  │  • Vagrant CLI                                       │  │
-│  │  • Ansible Control Node                             │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                           ↓                                 │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Docker Desktop Engine (Windows)                     │  │
-│  │  • Manages Container Lifecycle                      │  │
-│  │  • SSH Bridge to Container                          │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                           ↓                                 │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Docker Container (Ubuntu 22.04)                    │  │
-│  │  ┌────────────────────────────────────────────────┐ │  │
-│  │  │  SSH Server (Port 2200)                       │ │  │
-│  │  │  Docker Engine (DinD)                         │ │  │
-│  │  │  Application Stack (Nginx Alpine)             │ │  │
-│  │  └────────────────────────────────────────────────┘ │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+'''mermaid
+flowchart TB
+    %% Definición de Nodos con Estética Moderna
+    subgraph WindowsHost [💻 Windows 11 Workspace]
+        direction TB
+        subgraph WSL [🐧 WSL 2 Ubuntu Environment]
+            direction LR
+            VCLI([Vagrant CLI])
+            ACN[[Ansible Control Node]]
+        end
+        
+        DDE{{Docker Desktop Engine}}
+    end
+
+    subgraph Infrastructure [☁️ Infrastructure Layer]
+        direction TB
+        subgraph TargetCont [🐳 Container: Ubuntu 22.04]
+            direction TB
+            SSH[SSH Server :2200]
+            DIND[Docker Engine - DinD]
+            APP(Application: Nginx Alpine)
+        end
+    end
+
+    %% Flujo de Orquestación con Estilo
+    VCLI -->|1. Provider Call| DDE
+    DDE -->|2. Spin Up| TargetCont
+    ACN -->|3. SSH Provision| SSH
+    SSH -->|4. Config| DIND
+    DIND -->|5. Run| APP
+
+    %% Estilizado Avanzado (Arquitecto de Soluciones)
+    classDef control fill:#1a3a5c,stroke:#5fb0ff,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef runtime fill:#1a472a,stroke:#7ed321,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef engine fill:#2d2d2d,stroke:#999,stroke-width:2px,color:#fff,font-style:italic;
+    classDef ghost fill:none,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5,color:#333;
+
+    class VCLI,ACN control;
+    class TargetCont,APP,SSH runtime;
+    class DDE,DIND engine;
+    class WindowsHost,WSL,Infrastructure ghost;
+
+    %% Ajustes de Subgrafos
+    style WindowsHost fill:#f0f4f8,stroke:#d1d9e6
+    style Infrastructure fill:#f0f4f8,stroke:#d1d9e6
+'''
 
 ---
 
