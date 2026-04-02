@@ -1,0 +1,24 @@
+# Vagrant
+.vagrant/
+
+# Ansible
+*.retry
+*.log
+.ansible/
+inventory/vagrant_ansible_inventory
+
+# Docker & OS
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# SSH & Security (¡Crucial!)
+*.key
+*.pub
+known_hosts*
+.ssh/
+
+# Python
+__pycache__/
+*.pyc
