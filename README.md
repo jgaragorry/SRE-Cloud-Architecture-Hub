@@ -72,6 +72,7 @@ flowchart TB
     style INPUT fill:#1a1a2e,stroke:#4CAF50,stroke-width:2px,color:#fff
     style PROCESS fill:#0f3460,stroke:#2196F3,stroke-width:2px,color:#fff
     style OUTPUT fill:#2a1a3e,stroke:#9C27B0,stroke-width:2px,color:#fff
+```
 
 ---
 
