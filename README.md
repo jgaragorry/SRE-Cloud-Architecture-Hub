@@ -6,12 +6,9 @@
 [![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000)](https://www.ansible.com)
 [![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED)](https://www.docker.com)
 [![WSL](https://img.shields.io/badge/WSL-Windows%20Subsystem-0078D4)](https://learn.microsoft.com/en-us/windows/wsl/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📋 Descripción General
-Este repositorio implementa una **pipeline de despliegue inmutable** diseñada bajo principios de SRE. Utiliza un stack de **Infrastructure as Code (IaC)** para orquestar entornos reproducibles mediante **Vagrant** y **Ansible**, ejecutándose sobre **WSL 2**. 
-
-El proyecto resuelve el desafío de configurar servicios consistentes en entornos híbridos, garantizando que la infraestructura se comporte exactamente igual en desarrollo que en producción.
+Este repositorio implementa una **pipeline de despliegue inmutable** diseñada bajo principios de SRE. Utiliza un stack de **Infrastructure as Code (IaC)** para orquestar entornos reproducibles mediante **Vagrant** y **Ansible**, ejecutándose sobre **WSL 2**.
 
 ### 🎯 Valor Estratégico (SRE Insights)
 | Característica | Impacto Técnico |
@@ -55,8 +52,7 @@ flowchart TD
     %% Estilos Profesionales
     classDef control fill:#1a3a5c,stroke:#fff,color:#fff
     classDef tech fill:#1a472a,stroke:#fff,color:#fff
-    classDef alert fill:#7a2828,stroke:#fff,color:#fff
-
+    
     class A,C,D control
     class B,E,F,G tech
 '''
@@ -65,20 +61,24 @@ flowchart TD
 
 ## 🚀 Quick Start (Fast-Track)
 
+### 1. Configurar Interoperabilidad WSL 2
+Es vital que WSL pueda hablar con el binario de Docker en Windows:
 '''bash
-# 1. Clonar el repositorio
-git clone https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible.git
-cd iac-immutable-deployment-vagrant-ansible
-
-# 2. Configurar Interoperabilidad WSL 2
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
 export PATH="$PATH:/mnt/c/Windows/System32"
+'''
 
-# 3. Despliegue Automatizado
+### 2. Despliegue Automatizado
+'''bash
+# Clonar e iniciar
+git clone https://github.com/jgaragorry/iac-immutable-deployment-vagrant-ansible.git
+cd iac-immutable-deployment-vagrant-ansible
 vagrant up --provider=docker
+'''
 
-# 4. Aprovisionamiento (Comando de Oro)
-ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root
+### 3. Aprovisionamiento (Comando de Oro)
+'''bash
+ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root -e "ansible_password=root"
 '''
 
 ---
@@ -86,12 +86,12 @@ ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root
 ## 📁 Estructura del Proyecto
 '''text
 .
-├── Vagrantfile                 # Definición de recursos de infraestructura
-├── playbook.yml                # Configuración declarativa (Ansible)
-├── runbook.md                  # Manual operativo y Troubleshooting
-├── Makefile                    # Atajos de automatización (Ops)
+├── Vagrantfile         # Definición de recursos de infraestructura
+├── playbook.yml        # Configuración declarativa (Ansible)
+├── runbook.md          # Manual operativo y Troubleshooting
+├── Makefile            # Atajos de automatización (Ops)
 └── scripts/
-    └── smoke-test.sh           # Scripts de validación post-despliegue
+    └── smoke-test.sh   # Validación post-despliegue
 '''
 
 ---
@@ -99,10 +99,10 @@ ansible-playbook -i "127.0.0.1:2200," playbook.yml -u root
 ## 🔧 Comandos de Operación (Makefile)
 | Comando | Acción |
 | :--- | :--- |
-| `make deploy` | Ejecuta el flujo completo (Up + Provision). |
-| `make reset` | Destrucción total y purga de recursos huérfanos. |
-| `make verify` | Ejecuta Smoke Tests de conectividad y servicios. |
-| `make lint` | Valida la sintaxis de los archivos YAML y Vagrant. |
+| **make deploy** | Ejecuta el flujo completo (Up + Provision). |
+| **make reset** | Destrucción total y purga de recursos huérfanos. |
+| **make verify** | Ejecuta Smoke Tests de conectividad y servicios. |
+| **make lint** | Valida la sintaxis de los archivos YAML y Vagrant. |
 
 ---
 
