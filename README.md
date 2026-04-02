@@ -26,6 +26,7 @@ Perfect for **DevOps engineers, SREs, and infrastructure architects** learning o
 
 ```markdown
 ## 🏛️ Architecture at a Glance
+```
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {
