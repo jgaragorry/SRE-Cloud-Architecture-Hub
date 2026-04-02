@@ -26,52 +26,41 @@ Perfect for **DevOps engineers, SREs, and infrastructure architects** learning o
 
 ## 🏛️ Architecture at a Glance
 
-'''mermaid
-flowchart TB
-    %% Definición de Nodos con Estética Moderna
-    subgraph WindowsHost [💻 Windows 11 Workspace]
-        direction TB
-        subgraph WSL [🐧 WSL 2 Ubuntu Environment]
-            direction LR
-            VCLI([Vagrant CLI])
-            ACN[[Ansible Control Node]]
-        end
-        
-        DDE{{Docker Desktop Engine}}
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#FF9800',
+  'primaryBorderColor': '#E65100',
+  'lineColor': '#4CAF50'
+}}}%%
+
+flowchart LR
+    subgraph INPUT["📥 INPUT LAYER"]
+        A["📄 Vagrantfile<br/><small>Infrastructure Definition</small>"]
+        B["📝 playbook.yml<br/><small>Configuration State</small>"]
     end
-
-    subgraph Infrastructure [☁️ Infrastructure Layer]
-        direction TB
-        subgraph TargetCont [🐳 Container: Ubuntu 22.04]
-            direction TB
-            SSH[SSH Server :2200]
-            DIND[Docker Engine - DinD]
-            APP(Application: Nginx Alpine)
-        end
+    
+    subgraph PROCESS["⚙️ PROCESSING LAYER"]
+        C["🔨 Vagrant<br/><small>Provider: Docker</small>"]
+        D["🤖 Ansible<br/><small>SSH Transport</small>"]
+        E["🐳 Docker CLI<br/><small>Container Runtime</small>"]
     end
-
-    %% Flujo de Orquestación con Estilo
-    VCLI -->|1. Provider Call| DDE
-    DDE -->|2. Spin Up| TargetCont
-    ACN -->|3. SSH Provision| SSH
-    SSH -->|4. Config| DIND
-    DIND -->|5. Run| APP
-
-    %% Estilizado Avanzado (Arquitecto de Soluciones)
-    classDef control fill:#1a3a5c,stroke:#5fb0ff,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef runtime fill:#1a472a,stroke:#7ed321,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef engine fill:#2d2d2d,stroke:#999,stroke-width:2px,color:#fff,font-style:italic;
-    classDef ghost fill:none,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5,color:#333;
-
-    class VCLI,ACN control;
-    class TargetCont,APP,SSH runtime;
-    class DDE,DIND engine;
-    class WindowsHost,WSL,Infrastructure ghost;
-
-    %% Ajustes de Subgrafos
-    style WindowsHost fill:#f0f4f8,stroke:#d1d9e6
-    style Infrastructure fill:#f0f4f8,stroke:#d1d9e6
-'''
+    
+    subgraph OUTPUT["📤 OUTPUT LAYER"]
+        F["🗄️ Base Container<br/><small>Ubuntu 22.04</small>"]
+        G["🌐 Nginx Server<br/><small>Port 80 → 8081</small>"]
+        H["✅ Deployed App<br/><small>Ready to Serve</small>"]
+    end
+    
+    A --> C
+    B --> D
+    C --> F
+    D -->|SSH:2200| F
+    F --> E
+    E --> G
+    G --> H
+    
+    style INPUT fill:#1a1a2e,stroke:#16213e,stroke-width:2px
+    style PROCESS fill:#0f3460,stroke:#16213e,stroke-width:2px
+    style OUTPUT fill:#e94560,stroke:#16213e,stroke-width:2px
 
 ---
 
