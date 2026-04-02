@@ -303,7 +303,7 @@ This pipeline is ideal for:
 
 ## 👨‍💻 About the Author
 
-**Juan García Gorry** — SRE & Infrastructure Architect
+**Jose Garagory** — SRE & Infrastructure Architect
 
 | Platform | Link |
 |----------|------|

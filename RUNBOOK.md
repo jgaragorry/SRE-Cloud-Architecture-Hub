@@ -573,14 +573,14 @@ graph LR
 
 ## 📝 DOCUMENT METADATA
 
-| Field | Value |
-|-------|-------|
-| **Version** | 2.1 |
-| **Date** | April 2026 |
-| **Author** | Juan García Gorry |
-| **Status** | Production-Ready ✅ |
-| **Last Review** | 2026-04-02 |
-| **Audience** | DevOps / SRE Engineers |
+**Jose Garagory** — SRE & Infrastructure Architect
+
+| Platform | Link |
+|----------|------|
+| **LinkedIn** | [jgaragorry](https://www.linkedin.com/in/jgaragorry) |
+| **GitHub** | [jgaragorry](https://github.com/jgaragorry/) |
+| **WhatsApp** | [+56 956744034](https://wa.me/56956744034) |
+| **Website** | [geekmonkeytech.com](https://geekmonkeytech.com/) |
 
 ---
 
