@@ -24,43 +24,54 @@ Perfect for **DevOps engineers, SREs, and infrastructure architects** learning o
 
 ---
 
+```markdown
 ## 🏛️ Architecture at a Glance
 
+```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {
-  'primaryColor': '#FF9800',
-  'primaryBorderColor': '#E65100',
-  'lineColor': '#4CAF50'
+  'primaryColor': '#4CAF50',
+  'primaryBorderColor': '#2E7D32',
+  'secondaryColor': '#2196F3',
+  'secondaryBorderColor': '#0D47A1',
+  'tertiaryColor': '#9C27B0',
+  'tertiaryBorderColor': '#4A148C',
+  'lineColor': '#FF9800',
+  'fontSize': '14px',
+  'fontFamily': 'system-ui'
 }}}%%
 
-flowchart LR
+flowchart TB
     subgraph INPUT["📥 INPUT LAYER"]
-        A["📄 Vagrantfile<br/><small>Infrastructure Definition</small>"]
-        B["📝 playbook.yml<br/><small>Configuration State</small>"]
+        direction LR
+        A["📄 <b>Vagrantfile</b><br/>Infrastructure Definition"]
+        B["📝 <b>playbook.yml</b><br/>Configuration State"]
     end
     
     subgraph PROCESS["⚙️ PROCESSING LAYER"]
-        C["🔨 Vagrant<br/><small>Provider: Docker</small>"]
-        D["🤖 Ansible<br/><small>SSH Transport</small>"]
-        E["🐳 Docker CLI<br/><small>Container Runtime</small>"]
+        direction TB
+        C["🔨 <b>Vagrant</b><br/>Provider: Docker"]
+        D["🤖 <b>Ansible</b><br/>SSH Transport"]
+        E["🐳 <b>Docker CLI</b><br/>Container Runtime"]
     end
     
     subgraph OUTPUT["📤 OUTPUT LAYER"]
-        F["🗄️ Base Container<br/><small>Ubuntu 22.04</small>"]
-        G["🌐 Nginx Server<br/><small>Port 80 → 8081</small>"]
-        H["✅ Deployed App<br/><small>Ready to Serve</small>"]
+        direction TB
+        F["🗄️ <b>Base Container</b><br/>Ubuntu 22.04"]
+        G["🌐 <b>Nginx Server</b><br/>Port 80 → 8081"]
+        H["✅ <b>Deployed App</b><br/>Ready to Serve"]
     end
     
     A --> C
     B --> D
     C --> F
-    D -->|SSH:2200| F
+    D -->|🔌 SSH:2200| F
     F --> E
     E --> G
     G --> H
     
-    style INPUT fill:#1a1a2e,stroke:#16213e,stroke-width:2px
-    style PROCESS fill:#0f3460,stroke:#16213e,stroke-width:2px
-    style OUTPUT fill:#e94560,stroke:#16213e,stroke-width:2px
+    style INPUT fill:#1a1a2e,stroke:#4CAF50,stroke-width:2px,color:#fff
+    style PROCESS fill:#0f3460,stroke:#2196F3,stroke-width:2px,color:#fff
+    style OUTPUT fill:#2a1a3e,stroke:#9C27B0,stroke-width:2px,color:#fff
 
 ---
 
