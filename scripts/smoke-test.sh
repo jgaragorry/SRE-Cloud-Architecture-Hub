@@ -24,7 +24,7 @@ else
 fi
 
 # 3. Validar contenido (Hardening check)
-if curl -s $URL | grep -q "SoftrainCorp SRE"; then
+if curl -s $URL | grep -q "DEPLOY EXITOSO"; then
     echo "✅ [CONTENT]: El index.html es correcto."
 else
     echo "❌ [CONTENT]: El contenido del index no es el esperado."
