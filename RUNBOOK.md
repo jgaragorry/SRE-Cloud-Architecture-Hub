@@ -149,11 +149,11 @@ docker ps  # Verify
 ```bash
 cat >> ~/.bashrc <<'EOF'
 
-# ===== Infrastructure Configuration =====
+# ===== Fix para Vagrant & PowerShell =====
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
-export PATH="$PATH:/mnt/c/Windows/System32"
+export PATH="$PATH:/mnt/c/Windows/System32:/mnt/c/Windows/System32/WindowsPowerShell/v1.0"
 export ANSIBLE_HOST_KEY_CHECKING=False
-# ========================================
+# =========================================
 EOF
 
 source ~/.bashrc
