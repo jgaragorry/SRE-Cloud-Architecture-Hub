@@ -2,7 +2,8 @@
 - name: Despliegue SRE en Ubuntu Limpio
   hosts: all
   become: yes
-  gather_facts: no
+  gather_facts: yes  # Lo activamos para que Ansible detecte mejor el OS
+  
   pre_tasks:
     - name: Instalar Python para Ansible
       raw: apt-get update && apt-get install -y python3
@@ -12,19 +13,31 @@
     - name: 1. Instalar Nginx
       apt:
         name: nginx
-        state: latest
+        state: present  # "present" es más seguro que "latest" en SRE para evitar cambios no deseados
+        update_cache: yes
 
-    - name: 2. Hardening - Deshabilitar firmas
+    - name: 2. Hardening - Deshabilitar firmas (Server Tokens)
       lineinfile:
         path: /etc/nginx/nginx.conf
         regexp: 'server_tokens'
         line: '	server_tokens off;'
+        state: present
+      notify: Reiniciar Nginx  # Solo reinicia si el archivo cambió
 
-    - name: 3. Arrancar Nginx (Modo Daemon)
-      shell: "nginx -g 'daemon on;'"
-      ignore_errors: yes
+    - name: 3. Asegurar que Nginx esté corriendo y habilitado
+      service:
+        name: nginx
+        state: started
+        enabled: yes
 
-    - name: 4. Desplegar Index
+    - name: 4. Desplegar Index Personalizado
       copy:
         content: "<h1>Servidor Inmutable - SoftrainCorp SRE</h1>"
         dest: /var/www/html/index.html
+        mode: '0644'
+
+  handlers:
+    - name: Reiniciar Nginx
+      service:
+        name: nginx
+        state: restarted

@@ -1,24 +1,34 @@
-# Vagrant
-.vagrant/
+# === Identidad y Seguridad (CRÍTICO) ===
+# Ignorar la llave pública que copiamos para el Docker COPY
+id_workshop.pub
+# Ignorar cualquier llave privada o pública accidental
+*.key
+*.pub
+*.pem
+id_ed25519*
+authorized_keys
 
-# Ansible
+# === Vagrant & Virtualización ===
+.vagrant/
+vagrant-ssh-config
+
+# === Ansible & Provisioning ===
 *.retry
 *.log
 .ansible/
 inventory/vagrant_ansible_inventory
+# Si usas Vault, ignora el password
+.vault_pass
 
-# Docker & OS
+# === Docker & OS ===
 .DS_Store
 Thumbs.db
 *.swp
 *.tmp
+.docker/
 
-# SSH & Security (¡Crucial!)
-*.key
-*.pub
-known_hosts*
-.ssh/
-
-# Python
+# === Python (Ansible Runtime) ===
 __pycache__/
 *.pyc
+.venv/
+env/
